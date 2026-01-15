@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>顶级牛马下班倒计时 ⏰</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Font Awesome 图标（包含大量搞怪图标） -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <!-- 配置 Tailwind 自定义样式 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366F1', // 主色调：淡紫蓝（简约耐看）
+                        secondary: '#FDE68A', // 辅助色：奶黄（活泼搞怪）
+                        dark: '#1F2937', // 深色文本
+                        light: '#F9FAFB', // 浅色背景
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'], // 简约无衬线字体
+                    },
+                    animation: {
+                        'spin-slow': 'spin 3s linear infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.3);
+            }
+            .countdown-number {
+                font-variant-numeric: tabular-nums; /* 等宽数字，对齐更美观 */
+            }
+            .btn-active {
+                background-color: #6366F1;
+                color: white;
+                border-color: #6366F1;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gradient-to-br from-light to-blue-50 min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
+    <!-- 页面标题 -->
+    <header class="text-center mb-10 md:mb-16">
+        <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold text-primary text-shadow flex items-center justify-center gap-3">
+            <i class="fas fa-briefcase-medical rotate-12 text-secondary"></i>
+            顶级牛马下班倒计时
+            <i class="fas fa-martini-glass-citrus -rotate-12 text-secondary"></i>
+        </h1>
+        <p class="text-dark/70 mt-2 text-lg md:text-xl">摸鱼需谨慎，下班要准时 🚀</p>
+    </header>
+
+    <!-- 核心内容区 -->
+    <main class="w-full max-w-2xl">
+        <!-- 新增：大小周切换卡片 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8 card-hover">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl md:text-2xl font-semibold text-dark flex items-center gap-2">
+                    <i class="fas fa-calendar-week text-secondary animate-pulse"></i>
+                    大小周设置
+                </h2>
+                <span id="week-type-text" class="text-lg md:text-xl font-medium text-primary">当前：单休 (休1天)</span>
+            </div>
+            <div class="flex gap-4 justify-center">
+                <button id="small-week-btn" class="btn-active px-6 py-3 rounded-lg border transition-colors flex-1 font-medium flex items-center justify-center gap-2">
+                    <i class="fas fa-calendar-day"></i>
+                    单休 (休1天)
+                </button>
+                <button id="big-week-btn" class="px-6 py-3 rounded-lg border border-gray-300 hover:border-primary/50 transition-colors flex-1 font-medium flex items-center justify-center gap-2 text-dark">
+                    <i class="fas fa-calendar-days"></i>
+                    双休 (休2天)
+                </button>
+            </div>
+        </div>
+
+        <!-- 1. 周末倒计时卡片 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8 card-hover">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl md:text-2xl font-semibold text-dark flex items-center gap-2">
+                    <i class="fas fa-sun text-yellow-500 animate-pulse"></i>
+                    距离周末还有
+                </h2>
+                <span id="weekend-days" class="text-3xl md:text-4xl font-bold text-primary"></span>
+            </div>
+            <p id="weekend-desc" class="text-dark/60 italic flex items-center gap-2">
+                <i class="fas fa-comment-dots text-secondary"></i>
+                坚持住，快乐就在眼前！
+            </p>
+        </div>
+
+        <!-- 2. 下班倒计时核心区域 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 card-hover">
+            <!-- 自定义下班时间设置 -->
+            <div class="mb-8">
+                <h2 class="text-xl md:text-2xl font-semibold text-dark mb-4 flex items-center gap-2">
+                    <i class="fas fa-clock text-secondary"></i>
+                    设置下班时间
+                </h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div class="flex-1">
+                        <label for="work-hour" class="block text-dark/70 mb-2 text-sm">小时（0-23）</label>
+                        <input type="number" id="work-hour" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" min="0" max="23" value="18" placeholder="输入小时">
+                    </div>
+                    <div class="flex-1">
+                        <label for="work-minute" class="block text-dark/70 mb-2 text-sm">分钟（0-59）</label>
+                        <input type="number" id="work-minute" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" min="0" max="59" value="0" placeholder="输入分钟">
+                    </div>
+                    <div class="flex items-end">
+                        <button id="set-time-btn" class="w-full px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+                            <i class="fas fa-check"></i>
+                            确认设置
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 下班倒计时显示 -->
+            <div class="text-center">
+                <h2 class="text-xl md:text-2xl font-semibold text-dark mb-6 flex items-center justify-center gap-2">
+                    <i class="fas fa-running text-primary"></i>
+                    今日下班倒计时
+                </h2>
+                <div class="grid grid-cols-4 gap-3 md:gap-6 mb-6">
+                    <!-- 小时 -->
+                    <div class="bg-gray-50 rounded-xl p-4 md:p-6">
+                        <div id="hour" class="text-2xl md:text-4xl font-bold text-primary countdown-number">00</div>
+                        <div class="text-xs md:text-sm text-dark/60 mt-2">小时</div>
+                    </div>
+                    <!-- 分钟 -->
+                    <div class="bg-gray-50 rounded-xl p-4 md:p-6">
+                        <div id="minute" class="text-2xl md:text-4xl font-bold text-primary countdown-number">00</div>
+                        <div class="text-xs md:text-sm text-dark/60 mt-2">分钟</div>
+                    </div>
+                    <!-- 秒 -->
+                    <div class="bg-gray-50 rounded-xl p-4 md:p-6">
+                        <div id="second" class="text-2xl md:text-4xl font-bold text-primary countdown-number">00</div>
+                        <div class="text-xs md:text-sm text-dark/60 mt-2">秒</div>
+                    </div>
+                    <!-- 状态图标 -->
+                    <div class="bg-secondary/20 rounded-xl p-4 md:p-6 flex items-center justify-center">
+                        <i id="countdown-icon" class="fas fa-hourglass-half text-3xl md:text-5xl text-secondary animate-spin-slow"></i>
+                    </div>
+                </div>
+                <p id="off-work-desc" class="text-dark/60 flex items-center justify-center gap-2">
+                    <i class="fas fa-robot text-primary"></i>
+                    努力搬砖，坐等下班～
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="mt-12 text-center text-dark/50 text-sm">
+        <p class="flex items-center justify-center gap-2">
+            <i class="fas fa-heart text-red-400"></i>
+            打工人专属工具 | 简约搞怪下班倒计时
+        </p>
+    </footer>
+
+    <script>
+        // ********** 全局变量 **********
+        let offWorkHour = 18; // 默认下班小时
+        let offWorkMinute = 0; // 默认下班分钟
+        let countdownTimer = null; // 倒计时定时器
+        let currentWeekType = 'small'; // 当前周类型：small(小周) / big(大周)
+
+        // ********** DOM 元素获取 **********
+        const workHourInput = document.getElementById('work-hour');
+        const workMinuteInput = document.getElementById('work-minute');
+        const setTimeBtn = document.getElementById('set-time-btn');
+        const hourElement = document.getElementById('hour');
+        const minuteElement = document.getElementById('minute');
+        const secondElement = document.getElementById('second');
+        const countdownIcon = document.getElementById('countdown-icon');
+        const weekendDaysElement = document.getElementById('weekend-days');
+        const weekendDescElement = document.getElementById('weekend-desc');
+        const offWorkDescElement = document.getElementById('off-work-desc');
+        // 新增：大小周相关元素
+        const smallWeekBtn = document.getElementById('small-week-btn');
+        const bigWeekBtn = document.getElementById('big-week-btn');
+        const weekTypeText = document.getElementById('week-type-text');
+
+        // ********** 初始化页面 **********
+        window.onload = function() {
+            // 初始化大小周按钮事件
+            initWeekSwitch();
+            // 初始化周末倒计时
+            updateWeekendCountdown();
+            // 初始化下班倒计时
+            initCountdown();
+            // 每秒更新一次倒计时
+            countdownTimer = setInterval(updateCountdown, 1000);
+        };
+
+        // ********** 新增：大小周切换逻辑 **********
+        function initWeekSwitch() {
+            // 小周按钮点击事件
+            smallWeekBtn.addEventListener('click', function() {
+                currentWeekType = 'small';
+                // 更新按钮样式
+                smallWeekBtn.classList.add('btn-active');
+                smallWeekBtn.classList.remove('border-gray-300', 'text-dark');
+                bigWeekBtn.classList.remove('btn-active');
+                bigWeekBtn.classList.add('border-gray-300', 'text-dark');
+                // 更新文字提示
+                weekTypeText.textContent = '当前：单休 (休1天)';
+                // 重新计算周末倒计时
+                updateWeekendCountdown();
+            });
+
+            // 大周按钮点击事件
+            bigWeekBtn.addEventListener('click', function() {
+                currentWeekType = 'big';
+                // 更新按钮样式
+                bigWeekBtn.classList.add('btn-active');
+                bigWeekBtn.classList.remove('border-gray-300', 'text-dark');
+                smallWeekBtn.classList.remove('btn-active');
+                smallWeekBtn.classList.add('border-gray-300', 'text-dark');
+                // 更新文字提示
+                weekTypeText.textContent = '当前：双休 (休2天)';
+                // 重新计算周末倒计时
+                updateWeekendCountdown();
+            });
+        }
+
+        // ********** 优化：周末倒计时逻辑（适配大小周） **********
+        function updateWeekendCountdown() {
+            const today = new Date();
+            const currentDay = today.getDay(); // 0(周日) - 6(周六)
+            let daysToWeekend = 0;
+            let weekendText = '';
+            let weekendIcon = '';
+
+            // 根据大小周计算休息日
+            if (currentWeekType === 'small') {
+                // 小周：仅周日休息
+                switch(currentDay) {
+                    case 0: // 周日
+                        daysToWeekend = 0;
+                        weekendText = '今天是周日，小周休息日！快乐时光要珍惜～';
+                        weekendIcon = 'fas fa-star text-purple-500';
+                        break;
+                    case 1: // 周一
+                        daysToWeekend = 6;
+                        weekendText = '周一综合征？小周模式，还有6天就休息！';
+                        weekendIcon = 'fas fa-coffee text-brown-500';
+                        break;
+                    case 2: // 周二
+                        daysToWeekend = 5;
+                        weekendText = '周二啦，小周进度17%，离休息又近一步～';
+                        weekendIcon = 'fas fa-burger text-red-500';
+                        break;
+                    case 3: // 周三
+                        daysToWeekend = 4;
+                        weekendText = '周三快乐！小周模式，再熬4天～';
+                        weekendIcon = 'fas fa-pizza-slice text-orange-500';
+                        break;
+                    case 4: // 周四
+                        daysToWeekend = 3;
+                        weekendText = '周四啦！小周模式，最后3天，胜利就在眼前～';
+                        weekendIcon = 'fas fa-cake-candles text-pink-500';
+                        break;
+                    case 5: // 周五
+                        daysToWeekend = 2;
+                        weekendText = '周五快乐！小周模式，剩下2天就是休息～';
+                        weekendIcon = 'fas fa-champagne-glasses text-yellow-500';
+                        break;
+                    case 6: // 周六
+                        daysToWeekend = 1;
+                        weekendText = '周六啦，小周模式，明天就是休息日～';
+                        weekendIcon = 'fas fa-snowman text-blue-500';
+                        break;
+                }
+            } else {
+                // 大周：周六+周日休息
+                switch(currentDay) {
+                    case 0: // 周日
+                        daysToWeekend = 0;
+                        weekendText = '今天是周日，大周休息日！快乐时光要珍惜～';
+                        weekendIcon = 'fas fa-star text-purple-500';
+                        break;
+                    case 1: // 周一
+                        daysToWeekend = 5;
+                        weekendText = '周一综合征？大周模式，还有5天就周末！';
+                        weekendIcon = 'fas fa-coffee text-brown-500';
+                        break;
+                    case 2: // 周二
+                        daysToWeekend = 4;
+                        weekendText = '周二啦，大周进度20%，离周末又近一步～';
+                        weekendIcon = 'fas fa-burger text-red-500';
+                        break;
+                    case 3: // 周三
+                        daysToWeekend = 3;
+                        weekendText = '周三快乐！大周模式，俗称“小周末”，再熬3天～';
+                        weekendIcon = 'fas fa-pizza-slice text-orange-500';
+                        break;
+                    case 4: // 周四
+                        daysToWeekend = 2;
+                        weekendText = '周四啦！大周模式，最后2天，胜利就在眼前～';
+                        weekendIcon = 'fas fa-cake-candles text-pink-500';
+                        break;
+                    case 5: // 周五
+                        daysToWeekend = 1;
+                        weekendText = '周五快乐！大周模式，剩下1天就是周末，准备嗨起来～';
+                        weekendIcon = 'fas fa-champagne-glasses text-yellow-500';
+                        break;
+                    case 6: // 周六
+                        daysToWeekend = 0;
+                        weekendText = '周六啦，大周模式，周末已到，尽情放松吧！';
+                        weekendIcon = 'fas fa-snowman text-blue-500';
+                        break;
+                }
+            }
+
+            // 更新DOM
+            weekendDaysElement.textContent = daysToWeekend === 0 ? '🎉' : daysToWeekend;
+            weekendDescElement.innerHTML = `<i class="${weekendIcon} text-secondary"></i>${weekendText}`;
+        }
+
+        // ********** 下班倒计时逻辑 **********
+        // 初始化倒计时
+        function initCountdown() {
+            offWorkHour = parseInt(workHourInput.value) || 18;
+            offWorkMinute = parseInt(workMinuteInput.value) || 0;
+            // 修正输入值的边界
+            offWorkHour = Math.max(0, Math.min(23, offWorkHour));
+            offWorkMinute = Math.max(0, Math.min(59, offWorkMinute));
+            // 更新输入框显示
+            workHourInput.value = offWorkHour;
+            workMinuteInput.value = offWorkMinute;
+            // 立即更新一次倒计时
+            updateCountdown();
+        }
+
+        // 更新下班倒计时
+        function updateCountdown() {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            const currentSecond = now.getSeconds();
+
+            // 构建今日下班时间
+            const offWorkToday = new Date();
+            offWorkToday.setHours(offWorkHour);
+            offWorkToday.setMinutes(offWorkMinute);
+            offWorkToday.setSeconds(0);
+
+            // 计算时间差（毫秒）
+            let timeDiff = offWorkToday - now;
+
+            // 如果今日已过下班时间，计算明天的下班时间
+            if (timeDiff < 0) {
+                const offWorkTomorrow = new Date(offWorkToday);
+                offWorkTomorrow.setDate(offWorkTomorrow.getDate() + 1);
+                timeDiff = offWorkTomorrow - now;
+                offWorkDescElement.innerHTML = '<i class="fas fa-moon text-primary"></i> 今日已下班，坐等明天搬砖～';
+                countdownIcon.className = 'fas fa-bed text-secondary text-3xl md:text-5xl';
+            } else {
+                offWorkDescElement.innerHTML = '<i class="fas fa-robot text-primary"></i> 努力搬砖，坐等下班～';
+                countdownIcon.className = 'fas fa-hourglass-half text-3xl md:text-5xl text-secondary animate-spin-slow';
+            }
+
+            // 转换为小时、分钟、秒
+            const totalSeconds = Math.floor(timeDiff / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            // 更新DOM（补零显示）
+            hourElement.textContent = hours.toString().padStart(2, '0');
+            minuteElement.textContent = minutes.toString().padStart(2, '0');
+            secondElement.textContent = seconds.toString().padStart(2, '0');
+        }
+
+        // ********** 绑定设置按钮点击事件 **********
+        setTimeBtn.addEventListener('click', function() {
+            // 清除原有定时器
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+            }
+            // 重新初始化倒计时
+            initCountdown();
+            // 重启定时器
+            countdownTimer = setInterval(updateCountdown, 1000);
+            // 提示用户
+            alert(`已设置下班时间为 ${offWorkHour}:${offWorkMinute.toString().padStart(2, '0')}，加油搬砖！`);
+        });
+
+        // ********** 辅助：阻止输入框输入超出范围的值 **********
+        workHourInput.addEventListener('change', function() {
+            this.value = Math.max(0, Math.min(23, parseInt(this.value) || 0));
+        });
+
+        workMinuteInput.addEventListener('change', function() {
+            this.value = Math.max(0, Math.min(59, parseInt(this.value) || 0));
+        });
+    </script>
+</body>
+</html>
